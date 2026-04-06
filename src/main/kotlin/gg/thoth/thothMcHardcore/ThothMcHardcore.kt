@@ -50,13 +50,9 @@ class ThothMcHardcore : JavaPlugin(), Listener {
 
     override fun onEnable() {
         saveDefaultConfig()
-        server.pluginManager.registerEvents(this, this)
         languageMap = loadJapaneseLanguage()
         colorTeams = ColorTeams(this)
         colorTeams.ensureExists()
-        server.onlinePlayers.forEach(colorTeams::assignIfMissing)
-        healthSidebar = HealthSidebar(this)
-        healthSidebar.start()
         statsStore = RunStatsStore(File(dataFolder, "run-stats.yml"))
         val primaryWorld = getPrimaryWorld()
         val loadResult = statsStore.loadOrCreate(primaryWorld.name)
@@ -66,17 +62,25 @@ class ThothMcHardcore : JavaPlugin(), Listener {
             statsStore.save(runStats)
         }
         discordWebhookClient = DiscordWebhookClient.fromConfig(config)
+        server.onlinePlayers.forEach(colorTeams::assignIfMissing)
+        healthSidebar = HealthSidebar(this)
+        healthSidebar.start()
         server.onlinePlayers.forEach(::markParticipant)
         startStatsTask()
         registerProtocolLibListener()
+        server.pluginManager.registerEvents(this, this)
     }
 
     override fun onDisable() {
-        healthSidebar.stop()
+        if (::healthSidebar.isInitialized) {
+            healthSidebar.stop()
+        }
         deathMessagePacketListener?.close()
         shutdownTask?.cancel()
         statsTask?.cancel()
-        statsStore.save(runStats)
+        if (::statsStore.isInitialized && ::runStats.isInitialized) {
+            statsStore.save(runStats)
+        }
     }
 
     @EventHandler

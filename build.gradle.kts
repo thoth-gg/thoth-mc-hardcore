@@ -23,6 +23,10 @@ repositories {
 dependencies {
     compileOnly("org.spigotmc:spigot-api:1.21.11-R0.1-SNAPSHOT")
     compileOnly("net.dmulloy2:ProtocolLib:5.4.0")
+    implementation("net.megavex:scoreboard-library-api:2.7.2")
+    runtimeOnly("net.megavex:scoreboard-library-implementation:2.7.2")
+    implementation("net.kyori:adventure-text-serializer-gson:4.25.0")
+    implementation("net.kyori:adventure-text-serializer-legacy:4.25.0")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 }
@@ -144,6 +148,10 @@ abstract class SpigotRunTask : DefaultTask() {
 tasks {
     build {
         dependsOn(shadowJar)
+    }
+
+    shadowJar {
+        relocate("net.megavex.scoreboardlibrary", "gg.thoth.thothMcHardcore.lib.scoreboardlibrary")
     }
 
     processResources {
