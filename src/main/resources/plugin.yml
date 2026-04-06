@@ -1,0 +1,7 @@
+name: thoth-mc-hardcore
+version: '$version'
+
+main: gg.thoth.thothMcHardcore.ThothMcHardcore
+api-version: '1.21'
+softdepend:
+  - ProtocolLib

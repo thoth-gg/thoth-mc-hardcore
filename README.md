@@ -1,0 +1,1 @@
+# thoth-mc-hardcore
