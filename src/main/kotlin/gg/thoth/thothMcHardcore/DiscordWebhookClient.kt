@@ -81,6 +81,45 @@ class DiscordWebhookClient(
         sendPayload(payload)
     }
 
+    fun sendBossKillEmbed(
+        bossName: String,
+        killerName: String,
+        worldName: String,
+        x: Int,
+        y: Int,
+        z: Int,
+        happenedAtMillis: Long,
+    ) {
+        val fields = buildList {
+            add(field("ボス", bossName))
+            add(field("討伐者", killerName))
+            add(field("ワールド", worldName))
+            add(field("座標", "`$x, $y, $z`"))
+            if (!serverUrl.isNullOrBlank()) {
+                add(field("サーバーURL", serverUrl))
+            }
+        }
+
+        val payload = """
+            {
+              "username": "${escapeJson(serverName)} Hardcore Challenge",
+              "embeds": [
+                {
+                  "title": "${escapeJson(serverName)} Hardcore Challenge ボス討伐",
+                  "description": "${escapeJson(bossName)} が討伐されました。",
+                  "color": 16766720,
+                  "fields": [
+                    ${fields.joinToString(",\n                    ")}
+                  ],
+                  "timestamp": "${Instant.ofEpochMilli(happenedAtMillis)}"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        sendPayload(payload)
+    }
+
     private fun sendPayload(payload: String) {
         val request = HttpRequest.newBuilder(URI.create(webhookUrl))
             .header("Content-Type", "application/json")

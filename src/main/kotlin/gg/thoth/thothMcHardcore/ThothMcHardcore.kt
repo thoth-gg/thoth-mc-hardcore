@@ -11,6 +11,7 @@ import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.World
 import org.bukkit.damage.DamageType
+import org.bukkit.entity.EntityType
 import org.bukkit.entity.Firework
 import org.bukkit.entity.LivingEntity
 import org.bukkit.entity.Monster
@@ -47,6 +48,14 @@ class ThothMcHardcore : JavaPlugin(), Listener {
     @Volatile
     private var latestDeathMessage: String? = null
     private val resetRequestFileName = "reset-world.lock"
+    private val bossDisplayNames = mapOf(
+        EntityType.ENDER_DRAGON to "Ender Dragon",
+        EntityType.WITHER to "Wither",
+        EntityType.ELDER_GUARDIAN to "Elder Guardian",
+        EntityType.WARDEN to "Warden",
+        EntityType.RAVAGER to "Ravager",
+        EntityType.EVOKER to "Evoker",
+    )
 
     override fun onEnable() {
         saveDefaultConfig()
@@ -180,6 +189,7 @@ class ThothMcHardcore : JavaPlugin(), Listener {
         markParticipant(killer)
 
         val entity: LivingEntity = event.entity
+        notifyBossKillToDiscord(entity, killer)
         if (entity is Monster) {
             runStats.hostileKills += 1
             return
@@ -387,6 +397,31 @@ class ThothMcHardcore : JavaPlugin(), Listener {
                 )
             } catch (exception: Exception) {
                 logger.warning("Discord webhookへの開始通知に失敗しました: ${exception.message}")
+            }
+        })
+    }
+
+    private fun notifyBossKillToDiscord(entity: LivingEntity, killer: Player) {
+        if (!config.getBoolean("discord.notify-boss-kills", true)) {
+            return
+        }
+
+        val bossName = bossDisplayNames[entity.type] ?: return
+        val location = entity.location
+        val happenedAtMillis = System.currentTimeMillis()
+        server.scheduler.runTaskAsynchronously(this, Runnable {
+            try {
+                discordWebhookClient?.sendBossKillEmbed(
+                    bossName = bossName,
+                    killerName = killer.name,
+                    worldName = location.world?.name ?: "unknown",
+                    x = location.blockX,
+                    y = location.blockY,
+                    z = location.blockZ,
+                    happenedAtMillis = happenedAtMillis,
+                )
+            } catch (exception: Exception) {
+                logger.warning("Discord webhookへのボス撃破通知に失敗しました: ${exception.message}")
             }
         })
     }

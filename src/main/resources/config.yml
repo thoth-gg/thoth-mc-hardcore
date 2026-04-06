@@ -2,3 +2,4 @@ discord:
   webhook-url: ""
   server-name: ""
   server-url: ""
+  notify-boss-kills: true
