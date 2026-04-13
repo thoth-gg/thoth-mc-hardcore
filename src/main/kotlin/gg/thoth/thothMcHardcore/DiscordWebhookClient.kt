@@ -57,28 +57,22 @@ class DiscordWebhookClient(
     }
 
     fun sendFailureEmbed(snapshot: RunStatsSnapshot) {
-        val title = snapshot.deathMessage?.takeIf { it.isNotBlank() } ?: "失敗！"
-        val payload = """
-            {
-              "username": "${escapeJson(serverName)} Hardcore Challenge",
-              "embeds": [
-                {
-                  "title": "${escapeJson(serverName)} Hardcore Challenge 失敗",
-                  "description": "${escapeJson(title)}",
-                  "color": 15158332,
-                  "fields": [
-                    ${buildFields(snapshot).joinToString(",\n                    ")}
-                  ],
-                  "footer": {
-                    "text": "ワールド: ${escapeJson(snapshot.worldName)}"
-                  },
-                  "timestamp": "${snapshot.finishedAtIso}"
-                }
-              ]
-            }
-        """.trimIndent()
+        val description = snapshot.deathMessage?.takeIf { it.isNotBlank() } ?: "失敗！"
+        sendRunStatsEmbed(
+            snapshot = snapshot,
+            title = "$serverName Hardcore Challenge 失敗",
+            description = description,
+            color = 15158332,
+        )
+    }
 
-        sendPayload(payload)
+    fun sendManualStatsEmbed(snapshot: RunStatsSnapshot) {
+        sendRunStatsEmbed(
+            snapshot = snapshot,
+            title = "$serverName Hardcore Challenge 統計レポート",
+            description = "現在の統計を手動で投稿しました。",
+            color = 3447003,
+        )
     }
 
     fun sendBossKillEmbed(
@@ -120,6 +114,35 @@ class DiscordWebhookClient(
         sendPayload(payload)
     }
 
+    private fun sendRunStatsEmbed(
+        snapshot: RunStatsSnapshot,
+        title: String,
+        description: String,
+        color: Int,
+    ) {
+        val payload = """
+            {
+              "username": "${escapeJson(serverName)} Hardcore Challenge",
+              "embeds": [
+                {
+                  "title": "${escapeJson(title)}",
+                  "description": "${escapeJson(description)}",
+                  "color": $color,
+                  "fields": [
+                    ${buildFields(snapshot).joinToString(",\n                    ")}
+                  ],
+                  "footer": {
+                    "text": "ワールド: ${escapeJson(snapshot.worldName)}"
+                  },
+                  "timestamp": "${snapshot.finishedAtIso}"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        sendPayload(payload)
+    }
+
     private fun sendPayload(payload: String) {
         val request = HttpRequest.newBuilder(URI.create(webhookUrl))
             .header("Content-Type", "application/json")
@@ -132,7 +155,7 @@ class DiscordWebhookClient(
 
     private fun buildFields(snapshot: RunStatsSnapshot): List<String> = listOf(
         field("経過日数", formatDays(snapshot.gameDays)),
-        field("延べプレイヤー日数", formatDays(snapshot.aggregatePlayerDays)),
+        field("のべプレイヤー日数", formatDays(snapshot.aggregatePlayerDays)),
         field("参加人数", "${snapshot.participantCount}人"),
         field("破壊したブロック", formatLong(snapshot.blocksBroken)),
         field("設置したブロック", formatLong(snapshot.blocksPlaced)),

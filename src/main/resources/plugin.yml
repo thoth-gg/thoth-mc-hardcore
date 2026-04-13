@@ -5,3 +5,12 @@ main: gg.thoth.thothMcHardcore.ThothMcHardcore
 api-version: '1.21'
 softdepend:
   - ProtocolLib
+commands:
+  stats:
+    description: Discordに現在の統計を手動投稿します
+    usage: /stats
+    permission: thoth.stats
+permissions:
+  thoth.stats:
+    description: 手動でDiscordに統計を投稿できます
+    default: op

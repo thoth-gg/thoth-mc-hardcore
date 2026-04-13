@@ -3,6 +3,7 @@ package gg.thoth.thothMcHardcore
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.bukkit.ChatColor
 import org.bukkit.Color
 import org.bukkit.FireworkEffect
 import org.bukkit.GameMode
@@ -10,6 +11,8 @@ import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.Sound
 import org.bukkit.World
+import org.bukkit.command.Command
+import org.bukkit.command.CommandSender
 import org.bukkit.damage.DamageType
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.Firework
@@ -90,6 +93,21 @@ class ThothMcHardcore : JavaPlugin(), Listener {
         if (::statsStore.isInitialized && ::runStats.isInitialized) {
             statsStore.save(runStats)
         }
+    }
+
+    override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
+        if (command.name.equals("stats", ignoreCase = true)) {
+            if (!sender.hasPermission("thoth.stats")) {
+                sender.sendMessage("${ChatColor.RED}このコマンドを実行する権限がありません。")
+                return true
+            }
+
+            reportManualStatsToDiscord()
+            sender.sendMessage("${ChatColor.GREEN}Discordへ統計の投稿を開始しました。")
+            return true
+        }
+
+        return super.onCommand(sender, command, label, args)
     }
 
     @EventHandler
@@ -382,6 +400,24 @@ class ThothMcHardcore : JavaPlugin(), Listener {
                 })
             }, 1L)
         }
+    }
+
+    private fun reportManualStatsToDiscord() {
+        statsStore.save(runStats)
+        server.scheduler.runTaskLater(this, Runnable {
+            val snapshot = RunStatsSnapshot.from(
+                stats = runStats,
+                finishedAtMillis = System.currentTimeMillis(),
+                currentFullTime = getPrimaryWorld().fullTime,
+            )
+            server.scheduler.runTaskAsynchronously(this, Runnable {
+                try {
+                    discordWebhookClient?.sendManualStatsEmbed(snapshot)
+                } catch (exception: Exception) {
+                    logger.warning("Discord webhookへの手動統計投稿に失敗しました: ${exception.message}")
+                }
+            })
+        }, 1L)
     }
 
     private fun notifyChallengeStart(world: World, player: Player) {
